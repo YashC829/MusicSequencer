@@ -4,7 +4,7 @@ import numpy as np
 import sounddevice as sd
 
 # Constants
-DURATION = 0.3  # seconds
+DURATION = 1  # seconds the tone plays
 SAMPLE_RATE = 44100
 CANVAS_WIDTH = 800
 

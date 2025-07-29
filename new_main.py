@@ -1,0 +1,74 @@
+import tkinter as tk
+import numpy as np
+import sounddevice as sd
+
+# Constants
+DURATION = 0.5  # seconds the tone plays
+SAMPLE_RATE = 44100
+CANVAS_WIDTH = 800
+CANVAS_HEIGHT = 400
+LINE_Y = 200
+MIN_FREQ = 130.81  # C3
+MAX_FREQ = 1046.50  # C6
+
+adding_notes = False  # Mode toggle
+dots = []  # List of (dot_id, frequency, tone)
+
+# Generate a tone for a given frequency
+def generate_tone(frequency):
+    t = np.linspace(0, DURATION, int(SAMPLE_RATE * DURATION), False)
+    tone = 0.5 * np.sin(2 * np.pi * frequency * t)
+    return tone
+
+# Map x-position to frequency in the range C3–C6
+def map_x_to_freq(x):
+    x = max(50, min(CANVAS_WIDTH - 50, x))
+    norm_x = (x - 50) / (CANVAS_WIDTH - 100)
+    return MIN_FREQ + norm_x * (MAX_FREQ - MIN_FREQ)
+
+# GUI setup
+window = tk.Tk()
+window.title("Note Line Editor")
+canvas = tk.Canvas(window, width=CANVAS_WIDTH, height=CANVAS_HEIGHT, bg="white")
+canvas.pack()
+
+# Draw black horizontal line
+canvas.create_line(50, LINE_Y, CANVAS_WIDTH - 50, LINE_Y, width=2, fill="black")
+
+# Toggle add-note mode
+def toggle_add_mode():
+    global adding_notes
+    adding_notes = not adding_notes
+    if adding_notes:
+        plus_button.config(text="✅ Done Adding Notes")
+    else:
+        plus_button.config(text="➕ Add Notes")
+
+plus_button = tk.Button(window, text="➕ Add Notes", command=toggle_add_mode)
+plus_button.place(x=10, y=10)
+
+# Canvas click handler (adds note if in add mode)
+def on_canvas_click(event):
+    if not adding_notes:
+        return
+
+    x = event.x
+    y = LINE_Y
+    radius = 6
+    freq = map_x_to_freq(x)
+    tone = generate_tone(freq)
+    dot_id = canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="blue")
+
+    # Click on dot → play tone + highlight
+    def on_dot_click(event, dot_id=dot_id, tone=tone):
+        canvas.itemconfig(dot_id, fill="red")
+        sd.play(tone, SAMPLE_RATE)
+        canvas.after(300, lambda: canvas.itemconfig(dot_id, fill="blue"))
+
+    canvas.tag_bind(dot_id, "<Button-1>", on_dot_click)
+    dots.append((dot_id, freq, tone))
+
+# Bind canvas click
+canvas.bind("<Button-1>", on_canvas_click)
+
+window.mainloop()

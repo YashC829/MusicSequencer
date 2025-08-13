@@ -17,7 +17,9 @@ LINE_Y = 200
 MIN_FREQ = 130.81  # C3
 MAX_FREQ = 1046.50  # C6
 
-adding_notes = False  # Mode toggle
+adding_notes = False  # add mode toggle
+deleting_notes = False # delete mode toggle
+
 dots = []  # List of (dot_id, frequency, tone)
 
 # Generate a tone for a given frequency
@@ -62,6 +64,20 @@ def toggle_add_mode():
 plus_button = tk.Button(window, text="➕ Add Notes", command=toggle_add_mode)
 plus_button.place(x=10, y=10)
 
+def toggle_delete_mode():
+    global deleting_notes, adding_notes
+    deleting_notes = not deleting_notes
+
+    if deleting_notes:
+        delete_button.config(text="✅ Done Deleting")
+        adding_notes = False
+        plus_button.config(text="➕ Add Notes")  # Reset add mode if active
+    else:
+        delete_button.config(text="🗑 Delete Notes")
+
+delete_button = tk.Button(window, text="🗑 Delete Notes", command=toggle_delete_mode)
+delete_button.place(x=150, y=10)  # Adjust position next to add button
+
 # Canvas click handler (adds note if in add mode)
 def on_canvas_click(event):
     if not adding_notes:
@@ -74,8 +90,44 @@ def on_canvas_click(event):
     tone = generate_tone(freq)
     dot_id = canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="blue")
 
+     # Bind hover to show frequency
+    def on_hover(event, dot_id=dot_id, freq=freq):
+        x1, y1, x2, y2 = canvas.coords(dot_id)
+        dot_center_x = (x1 + x2) / 2
+        dot_center_y = (y1 + y2) / 2
+        text_id = canvas.create_text(
+            dot_center_x, 
+            dot_center_y + 20, 
+            text=f"{freq:.2f} Hz", 
+            fill="black", 
+            font=("Arial", 15, "bold")
+        )
+        canvas.itemconfig(dot_id, tags=("note", f"text_{dot_id}"))
+        canvas.setvar(f"text_{dot_id}", text_id)  # store ID in tk var
+
+    def on_leave(event, dot_id=dot_id):
+        try:
+            text_id = int(canvas.getvar(f"text_{dot_id}"))
+            canvas.delete(text_id)
+        except:
+            pass
+
+    canvas.tag_bind(dot_id, "<Enter>", on_hover)
+    canvas.tag_bind(dot_id, "<Leave>", on_leave)
+
     # Click on dot → play tone + highlight
     def on_dot_click(event, dot_id=dot_id, tone=tone):
+        global deleting_notes
+        if deleting_notes:
+        # Remove from canvas
+            canvas.delete(dot_id)
+            # Remove from dots list
+            for i, (d_id, _, _) in enumerate(dots):
+                if d_id == dot_id:
+                    dots.pop(i)
+                    break
+            return
+    
         canvas.itemconfig(dot_id, fill="red")
 
         #sd.play(tone, SAMPLE_RATE)

@@ -1,7 +1,8 @@
 '''
 next steps:
 enable multiple notes to play at same time
-make clicking less delayed 
+make clicking note for sound or add less delayed 
+enable user to adjust note pitch by sliding left and right
 '''
 
 import tkinter as tk

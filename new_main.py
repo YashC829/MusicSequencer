@@ -9,7 +9,7 @@ import numpy as np
 import sounddevice as sd
 
 # Constants
-DURATION = 3  # seconds the tone plays
+DURATION = 2  # seconds the tone plays
 SAMPLE_RATE = 44100
 CANVAS_WIDTH = 800
 CANVAS_HEIGHT = 400
@@ -57,7 +57,7 @@ def toggle_add_mode():
     global adding_notes
     adding_notes = not adding_notes
     if adding_notes:
-        plus_button.config(text="✅ Done Adding Notes")
+        plus_button.config(text="✅ Done Adding")
     else:
         plus_button.config(text="➕ Add Notes")
 
@@ -90,30 +90,47 @@ def on_canvas_click(event):
     tone = generate_tone(freq)
     dot_id = canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="blue")
 
-     # Bind hover to show frequency
-    def on_hover(event, dot_id=dot_id, freq=freq):
+   # rectangular pop up appears when right click on note
+    def show_frequency_popup(event, dot_id=dot_id, freq=freq):
+        # Get dot center position
         x1, y1, x2, y2 = canvas.coords(dot_id)
         dot_center_x = (x1 + x2) / 2
         dot_center_y = (y1 + y2) / 2
+
+        # Create text first so we can measure it
         text_id = canvas.create_text(
-            dot_center_x, 
-            dot_center_y + 20, 
-            text=f"{freq:.2f} Hz", 
-            fill="black", 
+            dot_center_x,
+            dot_center_y + 20,
+            text=f"{freq:.2f} Hz",
+            fill="black",
             font=("Arial", 15, "bold")
         )
-        canvas.itemconfig(dot_id, tags=("note", f"text_{dot_id}"))
-        canvas.setvar(f"text_{dot_id}", text_id)  # store ID in tk var
 
-    def on_leave(event, dot_id=dot_id):
-        try:
-            text_id = int(canvas.getvar(f"text_{dot_id}"))
-            canvas.delete(text_id)
-        except:
-            pass
+        # Get bounding box of text to create a rectangle background
+        bbox = canvas.bbox(text_id)  # (x1, y1, x2, y2)
+        rect_id = canvas.create_rectangle(
+            bbox[0] - 4, bbox[1] - 2, bbox[2] + 4, bbox[3] + 2,
+            fill="lightyellow", outline="black"
+        )
 
-    canvas.tag_bind(dot_id, "<Enter>", on_hover)
-    canvas.tag_bind(dot_id, "<Leave>", on_leave)
+        # Raise text above rectangle
+        canvas.tag_raise(text_id, rect_id)
+
+        # Store IDs so we can delete them later
+        popup_items = (rect_id, text_id)
+
+        # Function to remove popup
+        def remove_popup(e=None):
+            for item in popup_items:
+                canvas.delete(item)
+
+        # Remove popup on next click anywhere
+        canvas.bind("<Button-1>", remove_popup, add="+")
+        canvas.bind("<Button-3>", remove_popup, add="+")  # right click elsewhere
+
+    canvas.tag_bind(dot_id, "<Button-2>", show_frequency_popup) # mac: right click two fingers on trackpad
+    canvas.tag_bind(dot_id, "<Button-3>", show_frequency_popup) 
+    
 
     # Click on dot → play tone + highlight
     def on_dot_click(event, dot_id=dot_id, tone=tone):

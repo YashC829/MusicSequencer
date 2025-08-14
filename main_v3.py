@@ -3,7 +3,7 @@ import numpy as np
 import sounddevice as sd
 
 # Constants
-DURATION = 0.5  # seconds the tone plays
+DURATION = 2  # seconds the tone plays
 SAMPLE_RATE = 44100
 CANVAS_WIDTH = 800
 CANVAS_HEIGHT = 400
@@ -53,7 +53,7 @@ def toggle_add_mode():
     global adding_notes, deleting_notes
     adding_notes = not adding_notes
     if adding_notes:
-        plus_button.config(text="✅ Done Adding Notes")
+        plus_button.config(text="✅ Done Adding")
         deleting_notes = False
         delete_button.config(text="🗑 Delete Notes")
     else:
@@ -78,6 +78,7 @@ delete_button.place(x=150, y=10)
 
 # Create frequency popup on right-click
 def show_frequency_popup(event, dot_id, freq):
+    print("show popup")
     x1, y1, x2, y2 = canvas.coords(dot_id)
     dot_center_x = (x1 + x2) / 2
     dot_center_y = (y1 + y2) / 2
@@ -87,7 +88,7 @@ def show_frequency_popup(event, dot_id, freq):
         dot_center_y + 20,
         text=f"{freq:.2f} Hz",
         fill="black",
-        font=("Arial", 10, "bold")
+        font=("Arial", 15, "bold")
     )
     bbox = canvas.bbox(text_id)
     rect_id = canvas.create_rectangle(
@@ -96,16 +97,8 @@ def show_frequency_popup(event, dot_id, freq):
     )
     canvas.tag_raise(text_id, rect_id)
 
-    def remove_popup(e=None):
-        canvas.delete(rect_id)
-        canvas.delete(text_id)
-        canvas.unbind("<Button-1>", remove_popup)
-        canvas.unbind("<Button-2>", remove_popup)
-        canvas.unbind("<Button-3>", remove_popup)
+    canvas.after(4000, lambda: canvas.delete(rect_id) or canvas.delete(text_id)) #remove pop up after 4 seconds
 
-    canvas.bind("<Button-1>", remove_popup)
-    canvas.bind("<Button-2>", remove_popup)
-    canvas.bind("<Button-3>", remove_popup)
 
 # Drag functions
 def start_drag(event, dot_id):
